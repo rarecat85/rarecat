@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>tab Interaction</title>
+
+  <link href="../common/css/reset.css" rel="stylesheet" type="text/css" />
+  <link href="../common/css/font.css" rel="stylesheet" type="text/css" />
+  <link href="./assets/css/tab_interatcion.css" rel="stylesheet" type="text/css" />
+
+  <script src="../common/js/gsap.min.js"></script>
+  <script src="../common/js/ScrollTrigger.min.js"></script>
+  <script src="./assets/js/tab_interatcion.js" defer></script>
+</head>
+<body>
+  <main class="article-container">
+    <!-- thinQ-tabs -->
+    <section class="thinQ-tabs">
+      <div class="inner">
+        <div class="thinQ-tabs-imgbx">
+          <div class="thinQ-tabs-imgbx-bgwrap">
+            <picture class="thinQ-tabs-imgbx-bgwrap-bg01 active">
+              <source media="(max-width:768px)" srcset="./assets/img/thinQ01.png" />
+              <source media="(max-width:1024px)" srcset="./assets/img/thinQ01.png" />
+              <source media="(min-width:1025px)" srcset="./assets/img/thinQ01_pc.png" />
+              <img src="./assets/img/thinQ01.png" alt="" />
+            </picture>
+            <picture class="thinQ-tabs-imgbx-bgwrap-bg02">
+              <source media="(max-width:768px)" srcset="./assets/img/thinQ02.png" />
+              <source media="(max-width:1024px)" srcset="./assets/img/thinQ02.png" />
+              <source media="(min-width:1025px)" srcset="./assets/img/thinQ02_pc.png" />
+              <img src="./assets/img/thinQ02.png" alt="" />
+            </picture>
+          </div>
+          <div class="thinQ-tabs-imgbx-fixedimg">
+            <p class="thinQ-tabs-imgbx-fixedimg-title heading">“Hey, LG”</p>
+            <picture class="thinQ-tabs-imgbx-fixedimg-logo">
+              <source media="(max-width:768px)" srcset="./assets/img/ai_symbol_simple.gif" />
+              <source media="(max-width:1024px)" srcset="./assets/img/ai_symbol_simple.gif" />
+              <source media="(min-width:1025px)" srcset="./assets/img/ai_symbol_simple.gif" />
+              <img src="./assets/img/ai_symbol_simple.gif" alt="" />
+            </picture>
+            <picture class="thinQ-tabs-imgbx-fixedimg-prod">
+              <source media="(max-width:768px)" srcset="./assets/img/thinQ.png" />
+              <source media="(max-width:1024px)" srcset="./assets/img/thinQ.png" />
+              <source media="(min-width:1025px)" srcset="./assets/img/thinQ.png" />
+              <img src="./assets/img/thinQ.png" alt="" />
+            </picture>
+            <ul class="thinQ-tabs-imgbx-fixedimg-tablist">
+              <li class="active" id="thinQTap01" role="tab" aria-selected="true" aria-controls="thinQTapPanel01">Voice Assistant</li>
+              <li id="thinQTap02" role="tab" aria-selected="false" aria-controls="thinQTapPanel02">Home Automation</li>
+            </ul>
+          </div>
+        </div>
+        <div class="thinQ-tabs-conbx">
+          <div class="thinQ-tabs-conbx-tabcon active" id="thinQTapPanel01" role="tabpanel" tabindex="0" aria-labelledby="thinQTap01">
+            <h3 class="thinQ-tabs-conbx-tabcon-title heading">LG AI Voice Assistant</h3>
+            <p class="thinQ-tabs-conbx-tabcon-desc">
+              <span>Less touch, more talk.</span> Manage your appliances with your voice.<br>
+              <span>Ask anything.</span> The internet-connected AI companion can answer questions based on your shared data and the open internet.<br>
+              <span>Elevate the mood.</span> Every device is an additional smart speaker to play your favorite tunes throughout the house.
+            </p>
+            <a href="" class="btn white">Learn More</a>
+          </div>
+          <div class="thinQ-tabs-conbx-tabcon" id="thinQTapPanel02" role="tabpanel" tabindex="-1" aria-labelledby="thinQTap02">
+            <h3 class="thinQ-tabs-conbx-tabcon-title heading">A Smarter, More Advanced Home with LG AI</h3>
+            <p class="thinQ-tabs-conbx-tabcon-desc">
+              Pair up. Connect devices around the home to create combined workflows that tackle multiple tasks at once.
+              Smart Sensing. Devices that detect temperature, humidity, air quality, occupancy and more intuit how to optimize performance and meet your preferences.
+              Live sustainably. From turning off power when you're away to using power at optimal times, LG AI improves your household carbon footprint.
+            </p>
+            <a href="" class="btn white">Learn More</a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- //thinQ-tabs -->
+  </main>
+</body>
+</html>
