@@ -8,6 +8,7 @@ const tabCon = toArray('.thinQ-tabs-conbx-tabcon');
 let changeImg = tabBg.find(li => li.classList.contains('active')); // 초기 활성화된 이미지 설정
 let currentTimeline = null; // 진행 중인 타임라인 저장
 
+document.querySelectorAll
 tabList.forEach((tab, index) => {
   tab.addEventListener('click', () => {
     if (currentTimeline) currentTimeline.progress(1); // 현재 타임라인이 진행 중이라면 강제 완료

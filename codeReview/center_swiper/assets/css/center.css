@@ -1,0 +1,33 @@
+@charset "UTF-8";
+/* color set */
+/* breakpoint - mobile first 로, 기본 mobile scss 작성 후 768부터 tab, 1024부터 pc */
+/* PC 기준 inner 사이즈 */
+/* device별 기준 section 상하 padding값, rem mixin에 넣어서 사용 */
+/* rem */
+/* vw - pc 기준 */
+/* media Query */
+/* font */
+/* img */
+/* btn */
+.center-swiper-container {
+  width: 100%;
+  max-width: 26.5625rem;
+  height: 3.75rem;
+  margin: 0 auto;
+}
+.center-swiper-container .center-swiper {
+  width: 100%;
+  height: 100%;
+}
+.center-swiper-container .center-swiper .swiper-slide {
+  width: fit-content;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 0.625rem;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.center-swiper-container .center-swiper .swiper-slide.swiper-slide-active {
+  border-color: #EA1917;
+}/*# sourceMappingURL=center.css.map */
