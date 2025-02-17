@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인 콘텐츠로 건너뛰기 예제</title>
+    <style>
+        /* Skip 링크 스타일 */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #007BFF;
+            color: #fff;
+            padding: 8px 16px;
+            z-index: 100;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: top 0.3s ease;
+        }
+        .skip-link:focus {
+            top: 10px;
+            outline: 2px solid #fff;
+        }
+
+        /* 내비게이션 스타일 */
+        nav {
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+        nav a {
+            margin-right: 15px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        /* 메인 콘텐츠 스타일 */
+        main {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #333;
+        }
+        
+        /* 포커스 시각적 표시 */
+        #mainContent:focus {
+            outline: 3px dashed #FF5722;
+            background-color: #FFF3E0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 메인 콘텐츠로 건너뛰기 링크 -->
+    <a href="#mainContent" class="skip-link">메인 콘텐츠로 건너뛰기</a>
+
+    <!-- 내비게이션 메뉴 -->
+    <nav>
+        <a href="#">홈</a>
+        <a href="#">소개</a>
+        <a href="#">서비스</a>
+        <a href="#">문의</a>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main id="mainContent" tabindex="-1">
+        <h1>메인 콘텐츠 영역</h1>
+        <p>이곳은 메인 콘텐츠입니다. 키보드 사용자가 이 영역으로 쉽게 이동할 수 있습니다.</p>
+        <button>작동 테스트 버튼</button>
+    </main>
+
+    <!-- 푸터 -->
+    <footer>
+        <p>&copy; 2024 웹 접근성 예제</p>
+    </footer>
+
+</body>
+</html>

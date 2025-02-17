@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모달 포커스 트랩 예제</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 2px solid #333;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal.active {
+            display: block;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .overlay.active {
+            display: block;
+        }
+        button, input {
+            margin: 10px 0;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>모달 포커스 트랩 예제</h1>
+
+    <!-- 페이지 내 일반 포커스 요소 -->
+    <button id="openModal">모달 열기</button>
+    <input type="text" placeholder="페이지 입력란 1">
+    <input type="text" placeholder="페이지 입력란 2">
+    <button>페이지 버튼</button>
+
+    <!-- 모달 -->
+    <div class="overlay" id="overlay"></div>
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+        <h2>모달 창</h2>
+        <input type="text" placeholder="모달 입력란 1">
+        <button>모달 버튼 1</button>
+        <input type="text" placeholder="모달 입력란 2">
+        <button id="closeModal">모달 닫기</button>
+    </div>
+
+    <script>
+        const openBtn = document.getElementById('openModal');
+        const closeBtn = document.getElementById('closeModal');
+        const modal = document.getElementById('modal');
+        const overlay = document.getElementById('overlay');
+
+        let lastFocusedElement = null;
+
+        function trapFocus(element) {
+            const focusableSelectors = 'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])';
+            const focusableElements = element.querySelectorAll(focusableSelectors);
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            firstElement.focus();
+
+            element.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+            });
+        }
+
+        openBtn.addEventListener('click', () => {
+            lastFocusedElement = document.activeElement;
+            modal.classList.add('active');
+            overlay.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            trapFocus(modal);
+        });
+
+        closeBtn.addEventListener('click', () => {
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+            if (lastFocusedElement) lastFocusedElement.focus();
+        });
+    </script>
+</body>
+</html>

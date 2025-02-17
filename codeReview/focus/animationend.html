@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>애니메이션 포커스 관리 예제</title>
+    <style>
+        /* 애니메이션 박스 스타일 */
+        .animated-box {
+            width: 150px;
+            height: 150px;
+            margin: 50px auto;
+            background: linear-gradient(135deg, #FF6F61, #FFD700);
+            border-radius: 20px;
+            text-align: center;
+            line-height: 150px;
+            color: white;
+            font-weight: bold;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
+        }
+
+        .animated-box:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-40px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* 버튼 스타일 */
+        .action-button {
+            display: block;
+            margin: 30px auto;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background-color: #6A1B9A;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #AB47BC;
+        }
+
+        /* 결과 표시 영역 */
+        #result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .start-animation {
+            animation: float 3s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 애니메이션 박스 -->
+    <div class="animated-box" id="animatedBox">🎯 Click Me!</div>
+
+    <!-- 결과 표시 -->
+    <div id="result">애니메이션 이벤트 결과가 여기에 표시됩니다.</div>
+
+    <script>
+        const box = document.getElementById('animatedBox');
+        const result = document.getElementById('result');
+
+        box.addEventListener('click', () => {
+            box.classList.add('start-animation');
+            result.textContent = '애니메이션이 시작되었습니다!';
+        });
+
+        box.addEventListener('animationend', (event) => {
+            result.textContent = `애니메이션 '${event.animationName}'이(가) 끝났습니다! 소요 시간: ${event.elapsedTime}s`;
+            box.classList.remove('start-animation');
+        });
+
+    </script>
+</body>
+</html>
