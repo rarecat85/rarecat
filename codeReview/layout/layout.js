@@ -1,13 +1,24 @@
 // 전역 변수
-let htmlEditor, cssEditor, jsEditor;
+let htmlEditor, cssEditor;
 let currentTheme = 'default';
 let isFullscreen = false;
+let isMondrianFullscreen = false;
+
+// 몬드리안 색상 팔레트
+const mondrianColors = [
+    'mondrian-red',
+    'mondrian-blue', 
+    'mondrian-yellow',
+    'mondrian-white',
+    'mondrian-black'
+];
 
 // 초기화 함수
 document.addEventListener('DOMContentLoaded', function() {
     initializeEditors();
     setupEventListeners();
-    loadDefaultCode();
+    generateMondrianArtwork(); // 몬드리안 예제만 생성
+    loadDefaultCode(); // 기본 환영 메시지 로드
     updatePreview();
 });
 
@@ -45,28 +56,10 @@ function initializeEditors() {
         gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter']
     });
 
-    // JavaScript 에디터
-    jsEditor = CodeMirror.fromTextArea(document.getElementById('js-code'), {
-        mode: 'javascript',
-        theme: currentTheme,
-        lineNumbers: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        indentUnit: 2,
-        tabSize: 2,
-        lineWrapping: true,
-        foldGutter: true,
-        gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
-        extraKeys: {
-            'Ctrl-Space': 'autocomplete'
-        }
-    });
-
     // 에디터 크기 조정
     setTimeout(() => {
         htmlEditor.refresh();
         cssEditor.refresh();
-        jsEditor.refresh();
     }, 100);
 }
 
@@ -98,15 +91,23 @@ function setupEventListeners() {
         }
     });
 
-    // 전체화면 버튼 이벤트
-    document.getElementById('fullscreen-btn').addEventListener('click', function() {
-        toggleFullscreen();
+    // 몬드리안 생성 버튼 이벤트
+    document.getElementById('generate-mondrian-btn').addEventListener('click', function() {
+        generateMondrianArtwork();
+    });
+
+    // 전체화면 버튼 이벤트들
+    document.getElementById('fullscreen-preview-btn').addEventListener('click', function() {
+        toggleFullscreen('preview');
+    });
+
+    document.getElementById('fullscreen-mondrian-btn').addEventListener('click', function() {
+        toggleFullscreen('mondrian');
     });
 
     // 에디터 변경 이벤트 (실시간 미리보기)
     htmlEditor.on('change', debounce(updatePreview, 500));
     cssEditor.on('change', debounce(updatePreview, 500));
-    jsEditor.on('change', debounce(updatePreview, 500));
 
     // 키보드 단축키
     document.addEventListener('keydown', function(e) {
@@ -129,14 +130,146 @@ function setupEventListeners() {
             loadFromLocalStorage();
             showNotification('저장된 코드를 불러왔습니다!');
         }
+
+        // Ctrl + M: 새로운 몬드리안 생성
+        if (e.ctrlKey && e.key === 'm') {
+            e.preventDefault();
+            generateMondrianArtwork();
+            showNotification('새로운 몬드리안이 생성되었습니다!');
+        }
     });
 
     // ESC 키로 전체화면 해제
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isFullscreen) {
-            toggleFullscreen();
+        if (e.key === 'Escape') {
+            if (isFullscreen) {
+                toggleFullscreen('preview');
+            }
+            if (isMondrianFullscreen) {
+                toggleFullscreen('mondrian');
+            }
         }
     });
+}
+
+// 몬드리안 아트워크 생성 (빈틈없이 예쁘게)
+function generateMondrianArtwork() {
+    const gridSize = 4;
+    const artwork = document.getElementById('mondrian-artwork');
+    artwork.innerHTML = '';
+
+    // 4x4 그리드의 각 셀 사용 여부
+    const visited = Array.from({ length: gridSize }, () => Array(gridSize).fill(false));
+    // 블록 정보 저장
+    const blocks = [];
+
+    // 가능한 블록 크기 (가로, 세로)
+    const blockTypes = [
+        [2, 2], [2, 1], [1, 2], [1, 1]
+    ];
+
+    function canPlace(x, y, w, h) {
+        if (x + w > gridSize || y + h > gridSize) return false;
+        for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+                if (visited[y + dy][x + dx]) return false;
+            }
+        }
+        return true;
+    }
+
+    function markVisited(x, y, w, h) {
+        for (let dy = 0; dy < h; dy++) {
+            for (let dx = 0; dx < w; dx++) {
+                visited[y + dy][x + dx] = true;
+            }
+        }
+    }
+
+    // 왼쪽 위부터 순회하며 블록 배치
+    for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+            if (visited[y][x]) continue;
+            // 가능한 블록 크기 중 랜덤하게 시도
+            let shuffled = blockTypes.slice().sort(() => Math.random() - 0.5);
+            let placed = false;
+            for (let [w, h] of shuffled) {
+                if (canPlace(x, y, w, h)) {
+                    blocks.push({ x, y, w, h });
+                    markVisited(x, y, w, h);
+                    placed = true;
+                    break;
+                }
+            }
+            // 만약 어떤 블록도 못 놓으면 1x1로 채움
+            if (!placed) {
+                blocks.push({ x, y, w: 1, h: 1 });
+                markVisited(x, y, 1, 1);
+            }
+        }
+    }
+
+    // 색상 랜덤 배정
+    const colorList = [
+        'mondrian-red', 'mondrian-blue', 'mondrian-yellow', 'mondrian-white', 'mondrian-black'
+    ];
+
+    blocks.forEach(block => {
+        const div = document.createElement('div');
+        div.className = 'mondrian-block ' + colorList[Math.floor(Math.random() * colorList.length)];
+        div.style.gridColumn = `${block.x + 1} / span ${block.w}`;
+        div.style.gridRow = `${block.y + 1} / span ${block.h}`;
+        div.setAttribute('data-color', div.className.split(' ')[1]);
+        // 클릭 시 색상 변경
+        div.addEventListener('click', function() {
+            const currentColor = this.getAttribute('data-color');
+            const idx = colorList.indexOf(currentColor);
+            const nextColor = colorList[(idx + 1) % colorList.length];
+            this.className = 'mondrian-block ' + nextColor;
+            this.setAttribute('data-color', nextColor);
+        });
+        artwork.appendChild(div);
+    });
+}
+
+// 몬드리안 코드 생성
+function generateMondrianCode() {
+    const artwork = document.getElementById('mondrian-artwork');
+    const blocks = artwork.querySelectorAll('.mondrian-block');
+    
+    let htmlCode = '<div class="mondrian-container">\n';
+    let cssCode = '.mondrian-container {\n  display: grid;\n  grid-template-columns: repeat(4, 1fr);\n  grid-template-rows: repeat(4, 1fr);\n  gap: 3px;\n  width: 400px;\n  height: 400px;\n  background: white;\n  border: 3px solid #000;\n  padding: 3px;\n}\n\n.mondrian-block {\n  border: 2px solid #000;\n  transition: all 0.3s ease;\n  cursor: pointer;\n}\n\n.mondrian-block:hover {\n  transform: scale(1.05);\n  box-shadow: 0 4px 15px rgba(0,0,0,0.2);\n}\n\n';
+    
+    // 색상 클래스들
+    cssCode += '.mondrian-red { background: #e74c3c; }\n';
+    cssCode += '.mondrian-blue { background: #3498db; }\n';
+    cssCode += '.mondrian-yellow { background: #f1c40f; }\n';
+    cssCode += '.mondrian-white { background: white; }\n';
+    cssCode += '.mondrian-black { background: #2c3e50; }\n\n';
+    
+    blocks.forEach((block, index) => {
+        const color = block.getAttribute('data-color');
+        const gridColumn = block.style.gridColumn;
+        const gridRow = block.style.gridRow;
+        
+        htmlCode += `  <div class="mondrian-block ${color}"`;
+        if (gridColumn || gridRow) {
+            htmlCode += ' style="';
+            if (gridColumn) htmlCode += `grid-column: ${gridColumn}; `;
+            if (gridRow) htmlCode += `grid-row: ${gridRow}; `;
+            htmlCode += '"';
+        }
+        htmlCode += `></div>\n`;
+    });
+    
+    htmlCode += '</div>';
+    
+    // 에디터에 코드 설정
+    htmlEditor.setValue(htmlCode);
+    cssEditor.setValue(cssCode);
+    
+    // 미리보기 업데이트
+    updatePreview();
 }
 
 // 탭 전환 함수
@@ -159,7 +292,6 @@ function switchTab(tabName) {
     setTimeout(() => {
         if (tabName === 'html') htmlEditor.refresh();
         if (tabName === 'css') cssEditor.refresh();
-        if (tabName === 'js') jsEditor.refresh();
     }, 100);
 }
 
@@ -167,14 +299,12 @@ function switchTab(tabName) {
 function updateTheme() {
     htmlEditor.setOption('theme', currentTheme);
     cssEditor.setOption('theme', currentTheme);
-    jsEditor.setOption('theme', currentTheme);
 }
 
 // 미리보기 업데이트
 function updatePreview() {
     const htmlCode = htmlEditor.getValue();
     const cssCode = cssEditor.getValue();
-    const jsCode = jsEditor.getValue();
     
     const previewFrame = document.getElementById('preview-frame');
     const fullHTML = `
@@ -185,18 +315,17 @@ function updatePreview() {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>미리보기</title>
             <style>
+                body {
+                    margin: 0;
+                    padding: 20px;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background: #f8f9fa;
+                }
                 ${cssCode}
             </style>
         </head>
         <body>
             ${htmlCode}
-            <script>
-                try {
-                    ${jsCode}
-                } catch (error) {
-                    console.error('JavaScript 오류:', error);
-                }
-            </script>
         </body>
         </html>
     `;
@@ -209,18 +338,33 @@ function updatePreview() {
 }
 
 // 전체화면 토글
-function toggleFullscreen() {
-    const previewSection = document.querySelector('.preview-section');
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
-    
-    if (!isFullscreen) {
-        previewSection.classList.add('fullscreen');
-        fullscreenBtn.textContent = '전체화면 해제';
-        isFullscreen = true;
-    } else {
-        previewSection.classList.remove('fullscreen');
-        fullscreenBtn.textContent = '전체화면';
-        isFullscreen = false;
+function toggleFullscreen(type) {
+    if (type === 'preview') {
+        const previewSection = document.querySelector('.preview-section');
+        const fullscreenBtn = document.getElementById('fullscreen-preview-btn');
+        
+        if (!isFullscreen) {
+            previewSection.classList.add('fullscreen');
+            fullscreenBtn.textContent = '전체화면 해제';
+            isFullscreen = true;
+        } else {
+            previewSection.classList.remove('fullscreen');
+            fullscreenBtn.textContent = '전체화면';
+            isFullscreen = false;
+        }
+    } else if (type === 'mondrian') {
+        const mondrianSection = document.querySelector('.mondrian-section');
+        const fullscreenBtn = document.getElementById('fullscreen-mondrian-btn');
+        
+        if (!isMondrianFullscreen) {
+            mondrianSection.classList.add('fullscreen');
+            fullscreenBtn.textContent = '전체화면 해제';
+            isMondrianFullscreen = true;
+        } else {
+            mondrianSection.classList.remove('fullscreen');
+            fullscreenBtn.textContent = '전체화면';
+            isMondrianFullscreen = false;
+        }
     }
 }
 
@@ -228,27 +372,17 @@ function toggleFullscreen() {
 function clearAllCode() {
     htmlEditor.setValue('');
     cssEditor.setValue('');
-    jsEditor.setValue('');
     updatePreview();
 }
 
 // 기본 코드 로드
 function loadDefaultCode() {
-    const defaultHTML = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>안녕하세요!</title>
-</head>
-<body>
-    <div class="container">
-        <h1>코드 에디터에 오신 것을 환영합니다!</h1>
-        <p>HTML, CSS, JavaScript 코드를 입력하고 실시간으로 결과를 확인해보세요.</p>
-        <button id="demo-btn">클릭해보세요</button>
-    </div>
-</body>
-</html>`;
+    const defaultHTML = `<div class="welcome-container">
+    <h1>레이아웃 연습장에 오신 것을 환영합니다!</h1>
+    <p>왼쪽의 몬드리안 디자인을 참고하여 CSS Grid와 Flexbox를 연습해보세요.</p>
+    <p>HTML과 CSS 코드를 작성하면 오른쪽에서 실시간으로 결과를 확인할 수 있습니다.</p>
+    <button id="start-btn">연습 시작하기</button>
+</div>`;
 
     const defaultCSS = `body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -259,7 +393,7 @@ function loadDefaultCode() {
     color: white;
 }
 
-.container {
+.welcome-container {
     max-width: 800px;
     margin: 0 auto;
     text-align: center;
@@ -273,57 +407,31 @@ h1 {
 
 p {
     font-size: 1.2rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     opacity: 0.9;
+    line-height: 1.6;
 }
 
-#demo-btn {
-    padding: 12px 24px;
-    font-size: 1.1rem;
+#start-btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
     background: rgba(255,255,255,0.2);
     border: 2px solid white;
     color: white;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-top: 2rem;
 }
 
-#demo-btn:hover {
+#start-btn:hover {
     background: rgba(255,255,255,0.3);
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }`;
 
-    const defaultJS = `// 버튼 클릭 이벤트
-document.getElementById('demo-btn').addEventListener('click', function() {
-    this.textContent = '클릭됨!';
-    this.style.background = 'rgba(255,255,255,0.4)';
-    
-    // 1초 후 원래대로 복원
-    setTimeout(() => {
-        this.textContent = '클릭해보세요';
-        this.style.background = 'rgba(255,255,255,0.2)';
-    }, 1000);
-});
-
-// 페이지 로드 시 애니메이션
-window.addEventListener('load', function() {
-    const elements = document.querySelectorAll('h1, p, #demo-btn');
-    elements.forEach((el, index) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            el.style.transition = 'all 0.6s ease';
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-        }, index * 200);
-    });
-});`;
-
     htmlEditor.setValue(defaultHTML);
     cssEditor.setValue(defaultCSS);
-    jsEditor.setValue(defaultJS);
 }
 
 // 로컬 스토리지에 저장
@@ -331,20 +439,18 @@ function saveToLocalStorage() {
     const codeData = {
         html: htmlEditor.getValue(),
         css: cssEditor.getValue(),
-        js: jsEditor.getValue(),
         timestamp: new Date().toISOString()
     };
-    localStorage.setItem('codeEditorData', JSON.stringify(codeData));
+    localStorage.setItem('layoutEditorData', JSON.stringify(codeData));
 }
 
 // 로컬 스토리지에서 로드
 function loadFromLocalStorage() {
-    const savedData = localStorage.getItem('codeEditorData');
+    const savedData = localStorage.getItem('layoutEditorData');
     if (savedData) {
         const codeData = JSON.parse(savedData);
         htmlEditor.setValue(codeData.html || '');
         cssEditor.setValue(codeData.css || '');
-        jsEditor.setValue(codeData.js || '');
         updatePreview();
     }
 }
@@ -404,10 +510,10 @@ setInterval(saveToLocalStorage, 5000);
 
 // 페이지 로드 시 저장된 코드 복원
 window.addEventListener('load', function() {
-    const savedData = localStorage.getItem('codeEditorData');
+    const savedData = localStorage.getItem('layoutEditorData');
     if (savedData) {
         const codeData = JSON.parse(savedData);
-        if (codeData.html || codeData.css || codeData.js) {
+        if (codeData.html || codeData.css) {
             if (confirm('저장된 코드가 있습니다. 불러오시겠습니까?')) {
                 loadFromLocalStorage();
             }

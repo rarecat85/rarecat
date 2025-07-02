@@ -43,6 +43,23 @@ body {
     align-items: center;
 }
 
+.generate-btn {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+}
+
 .theme-selector {
     padding: 0.5rem 1rem;
     border: 2px solid #e1e5e9;
@@ -94,11 +111,11 @@ body {
     display: flex;
     gap: 1rem;
     padding: 1rem;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 350px);
 }
 
-/* 에디터 섹션 */
-.editor-section {
+/* 몬드리안 섹션 */
+.mondrian-section {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -109,75 +126,75 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.editor-tabs {
-    display: flex;
+.mondrian-header {
+    padding: 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.tab-btn {
-    flex: 1;
-    padding: 1rem;
-    border: none;
-    background: transparent;
-    font-size: 0.9rem;
+.mondrian-header h3 {
+    color: #333;
+    font-size: 1.1rem;
     font-weight: 600;
-    color: #6c757d;
-    cursor: pointer;
+}
+
+.mondrian-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f8f9fa;
+}
+
+.mondrian-artwork {
+    width: 100%;
+    height: 100%;
+    max-width: 400px;
+    max-height: 400px;
+    background: white;
+    border: 3px solid #000;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 3px;
+    padding: 3px;
+}
+
+.mondrian-block {
+    background: white;
+    border: 2px solid #000;
     transition: all 0.3s ease;
     position: relative;
+    overflow: hidden;
 }
 
-.tab-btn:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-}
-
-.tab-btn.active {
-    background: white;
-    color: #667eea;
-}
-
-.tab-btn.active::after {
+.mondrian-block::before {
     content: '';
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     right: 0;
-    height: 3px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    bottom: 0;
+    background: inherit;
+    transition: all 0.3s ease;
 }
 
-.editor-container {
-    flex: 1;
-    position: relative;
+.mondrian-block:hover::before {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.editor-panel {
-    display: none;
-    height: 100%;
-}
-
-.editor-panel.active {
-    display: block;
-}
-
-/* CodeMirror 커스터마이징 */
-.CodeMirror {
-    height: 100% !important;
-    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.CodeMirror-gutters {
-    background: #f8f9fa;
-    border-right: 1px solid #e1e5e9;
-}
-
-.CodeMirror-linenumber {
-    color: #adb5bd;
-}
+/* 몬드리안 색상 클래스들 */
+.mondrian-red { background: #e74c3c; }
+.mondrian-blue { background: #3498db; }
+.mondrian-yellow { background: #f1c40f; }
+.mondrian-white { background: white; }
+.mondrian-black { background: #2c3e50; }
 
 /* 미리보기 섹션 */
 .preview-section {
@@ -234,6 +251,96 @@ body {
     background: white;
 }
 
+/* 에디터 섹션 */
+.editor-section {
+    height: 300px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin: 0 1rem 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.tab-btn:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #667eea;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.editor-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.editor-panel {
+    display: none;
+    height: 100%;
+    overflow: hidden;
+}
+
+.editor-panel.active {
+    display: block;
+}
+
+/* CodeMirror 커스터마이징 */
+.CodeMirror {
+    height: 100% !important;
+    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow: auto;
+}
+
+.CodeMirror-scroll {
+    overflow: auto !important;
+}
+
+.CodeMirror-gutters {
+    background: #f8f9fa;
+    border-right: 1px solid #e1e5e9;
+}
+
+.CodeMirror-linenumber {
+    color: #adb5bd;
+}
+
 /* 전체화면 모드 */
 .fullscreen {
     position: fixed;
@@ -245,12 +352,14 @@ body {
     background: white;
 }
 
-.fullscreen .preview-header {
+.fullscreen .preview-header,
+.fullscreen .mondrian-header {
     background: #333;
     color: white;
 }
 
-.fullscreen .preview-header h3 {
+.fullscreen .preview-header h3,
+.fullscreen .mondrian-header h3 {
     color: white;
 }
 
@@ -261,13 +370,25 @@ body {
 }
 
 /* 반응형 디자인 */
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
     .main-content {
         flex-direction: column;
         gap: 0.5rem;
         padding: 0.5rem;
     }
     
+    .mondrian-section,
+    .preview-section {
+        border-radius: 8px;
+    }
+    
+    .editor-section {
+        margin: 0 0.5rem 0.5rem 0.5rem;
+        height: 250px;
+    }
+}
+
+@media (max-width: 768px) {
     .header {
         padding: 0.8rem 1rem;
         flex-direction: column;
@@ -277,11 +398,16 @@ body {
     .controls {
         width: 100%;
         justify-content: center;
+        flex-wrap: wrap;
     }
     
-    .editor-section,
-    .preview-section {
-        border-radius: 8px;
+    .mondrian-artwork {
+        max-width: 300px;
+        max-height: 300px;
+    }
+    
+    .editor-section {
+        height: 220px;
     }
 }
 
@@ -328,3 +454,41 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* 몬드리안 애니메이션 */
+@keyframes mondrianFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.mondrian-artwork {
+    animation: mondrianFadeIn 0.6s ease-out;
+}
+
+.mondrian-block {
+    animation: mondrianFadeIn 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.mondrian-block:nth-child(1) { animation-delay: 0.1s; }
+.mondrian-block:nth-child(2) { animation-delay: 0.2s; }
+.mondrian-block:nth-child(3) { animation-delay: 0.3s; }
+.mondrian-block:nth-child(4) { animation-delay: 0.4s; }
+.mondrian-block:nth-child(5) { animation-delay: 0.5s; }
+.mondrian-block:nth-child(6) { animation-delay: 0.6s; }
+.mondrian-block:nth-child(7) { animation-delay: 0.7s; }
+.mondrian-block:nth-child(8) { animation-delay: 0.8s; }
+.mondrian-block:nth-child(9) { animation-delay: 0.9s; }
+.mondrian-block:nth-child(10) { animation-delay: 1.0s; }
+.mondrian-block:nth-child(11) { animation-delay: 1.1s; }
+.mondrian-block:nth-child(12) { animation-delay: 1.2s; }
+.mondrian-block:nth-child(13) { animation-delay: 1.3s; }
+.mondrian-block:nth-child(14) { animation-delay: 1.4s; }
+.mondrian-block:nth-child(15) { animation-delay: 1.5s; }
+.mondrian-block:nth-child(16) { animation-delay: 1.6s; }

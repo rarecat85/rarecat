@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>코드 에디터 - 실시간 미리보기</title>
+    <title>레이아웃 연습장 - 몬드리안 디자인</title>
     <link rel="stylesheet" href="layout.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
@@ -13,8 +13,9 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>코드 에디터</h1>
+            <h1>레이아웃 연습장</h1>
             <div class="controls">
+                <button id="generate-mondrian-btn" class="generate-btn">새로운 몬드리안 생성</button>
                 <select id="theme-selector" class="theme-selector">
                     <option value="default">기본 테마</option>
                     <option value="monokai">Monokai</option>
@@ -27,41 +28,51 @@
         </header>
         
         <main class="main-content">
-            <div class="editor-section">
-                <div class="editor-tabs">
-                    <button class="tab-btn active" data-tab="html">HTML</button>
-                    <button class="tab-btn" data-tab="css">CSS</button>
-                    <button class="tab-btn" data-tab="js">JavaScript</button>
+            <!-- 왼쪽: 몬드리안 디자인 예제 -->
+            <div class="mondrian-section">
+                <div class="mondrian-header">
+                    <h3>몬드리안 디자인 예제</h3>
+                    <button id="fullscreen-mondrian-btn" class="fullscreen-btn">전체화면</button>
                 </div>
-                
-                <div class="editor-container">
-                    <div class="editor-panel active" id="html-editor">
-                        <textarea id="html-code" placeholder="HTML 코드를 입력하세요..."></textarea>
-                    </div>
-                    <div class="editor-panel" id="css-editor">
-                        <textarea id="css-code" placeholder="CSS 코드를 입력하세요..."></textarea>
-                    </div>
-                    <div class="editor-panel" id="js-editor">
-                        <textarea id="js-code" placeholder="JavaScript 코드를 입력하세요..."></textarea>
+                <div class="mondrian-container">
+                    <div id="mondrian-artwork" class="mondrian-artwork">
+                        <!-- 몬드리안 디자인이 여기에 생성됩니다 -->
                     </div>
                 </div>
             </div>
             
+            <!-- 오른쪽: 실시간 미리보기 -->
             <div class="preview-section">
                 <div class="preview-header">
                     <h3>실시간 미리보기</h3>
-                    <button id="fullscreen-btn" class="fullscreen-btn">전체화면</button>
+                    <button id="fullscreen-preview-btn" class="fullscreen-btn">전체화면</button>
                 </div>
                 <div class="preview-container">
                     <iframe id="preview-frame" class="preview-frame"></iframe>
                 </div>
             </div>
         </main>
+        
+        <!-- 하단: 코드 에디터 -->
+        <div class="editor-section">
+            <div class="editor-tabs">
+                <button class="tab-btn active" data-tab="html">HTML</button>
+                <button class="tab-btn" data-tab="css">CSS</button>
+            </div>
+            
+            <div class="editor-container">
+                <div class="editor-panel active" id="html-editor">
+                    <textarea id="html-code" placeholder="HTML 코드를 입력하세요..."></textarea>
+                </div>
+                <div class="editor-panel" id="css-editor">
+                    <textarea id="css-code" placeholder="CSS 코드를 입력하세요..."></textarea>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
     <script src="layout.js"></script>
