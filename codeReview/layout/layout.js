@@ -508,15 +508,13 @@ function showNotification(message) {
 // 자동 저장 (5초마다)
 setInterval(saveToLocalStorage, 5000);
 
-// 페이지 로드 시 저장된 코드 복원
+// 페이지 로드시 저장된 코드 자동 불러오기
 window.addEventListener('load', function() {
     const savedData = localStorage.getItem('layoutEditorData');
     if (savedData) {
         const codeData = JSON.parse(savedData);
         if (codeData.html || codeData.css) {
-            if (confirm('저장된 코드가 있습니다. 불러오시겠습니까?')) {
-                loadFromLocalStorage();
-            }
+            loadFromLocalStorage();
         }
     }
 });
