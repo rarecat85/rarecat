@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     generateMondrianArtwork(); // 몬드리안 예제만 생성
     loadDefaultCode(); // 기본 환영 메시지 로드
     updatePreview();
+    setTimeout(setupStartButtonClear, 300); // 버튼이 렌더링된 후 이벤트 등록
 });
 
 // 에디터 초기화
@@ -326,6 +327,16 @@ function updatePreview() {
         </head>
         <body>
             ${htmlCode}
+            <script>
+            window.addEventListener('DOMContentLoaded', function() {
+                var btn = document.getElementById('start-btn');
+                if (btn) {
+                    btn.addEventListener('click', function() {
+                        window.parent.postMessage({ type: 'clear-editors' }, '*');
+                    });
+                }
+            });
+            </script>
         </body>
         </html>
     `;
@@ -516,5 +527,26 @@ window.addEventListener('load', function() {
         if (codeData.html || codeData.css) {
             loadFromLocalStorage();
         }
+    }
+});
+
+// 연습시작하기 버튼 이벤트 등록
+function setupStartButtonClear() {
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', function() {
+            htmlEditor.setValue('');
+            cssEditor.setValue('');
+            updatePreview();
+        });
+    }
+}
+
+// 부모 window에서 메시지 수신하여 에디터 비우기
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'clear-editors') {
+        htmlEditor.setValue('');
+        cssEditor.setValue('');
+        updatePreview();
     }
 });
