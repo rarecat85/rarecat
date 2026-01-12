@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Map with deck.gl</title>
+    <script src="https://unpkg.com/deck.gl@9.0.1/dist.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #F0ECE4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .inner {
+            width: 1320px;
+            max-width: 100%;
+            position: relative;
+            border-radius:20px;
+            overflow: hidden;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 720px;
+            position: relative;
+            background: #F6F3EB;
+            overflow: hidden;
+            border-radius:20px;
+            z-index: 10;
+        }
+
+        .marker-buttons {
+            width:100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: absolute;
+            top:0;
+            left:0;
+            z-index: 1;
+        }
+
+        .marker-button {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(234, 25, 23, 0.3);
+            border-radius: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            width: 100%;
+        }
+
+        .marker-button:hover {
+            background: #EA1917;
+            color: white;
+            border-color: #EA1917;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(234, 25, 23, 0.3);
+        }
+
+        .marker-button:active {
+            transform: translateX(0);
+        }
+
+        .marker-button.cluster-button {
+            font-weight: 600;
+            font-size: 15px;
+            background: rgba(234, 25, 23, 0.1);
+            border-color: rgba(234, 25, 23, 0.5);
+        }
+
+        .marker-button.cluster-button:hover {
+            background: #EA1917;
+            color: white;
+        }
+
+        .marker-button.individual-button {
+            margin-left: 20px;
+            font-size: 13px;
+        }
+
+        .zoom-out-button {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: #EA1917;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(234, 25, 23, 0.3);
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .zoom-out-button:hover {
+            background: #c7140f;
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 16px rgba(234, 25, 23, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="inner">
+        <div class="map-container" id="deck-container">
+            <button class="zoom-out-button" id="zoom-out-button" tabindex="100">지도 축소하기</button>
+        </div>
+        <div class="marker-buttons" id="marker-buttons">
+        </div>
+    </div>
+
+    <script>
+        const COUNTRIES_URL = 'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson';
+
+        // 제외할 작은 섬나라 목록
+        const SMALL_ISLANDS = [
+            'Antarctica', 'French Southern and Antarctic Lands', 'Heard Island and McDonald Islands',
+            'South Georgia and South Sandwich Islands', 'British Indian Ocean Territory',
+            'Pitcairn Islands', 'Norfolk Island', 'Christmas Island', 'Cocos Islands',
+            'Bouvet Island', 'United States Minor Outlying Islands', 'Paracel Islands',
+            'Spratly Islands', 'Clipperton Island', 'Ashmore and Cartier Islands',
+            'Coral Sea Islands', 'Glorioso Islands', 'Juan de Nova Island', 'Bassas da India',            'Europa Island', 'Tromelin Island', 'Mayotte', 'Reunion', 'Saint Helena',
+            'Tristan da Cunha', 'Ascension Island', 'Saint Pierre and Miquelon',
+            'Wallis and Futuna', 'Tokelau', 'American Samoa', 'Guam', 'Northern Mariana Islands',
+            'Marshall Islands', 'Federated States of Micronesia', 'Palau', 'Nauru',
+            'Kiribati', 'Tuvalu', 'Samoa', 'Tonga', 'Niue', 'Cook Islands',
+            'French Polynesia', 'Fiji', 'Vanuatu', 'Solomon Islands', 'New Caledonia',
+            'Papua New Guinea', 'East Timor', 'Brunei', 'Singapore', 'Maldives',
+            'Seychelles', 'Mauritius', 'Comoros', 'Cape Verde', 'Sao Tome and Principe',
+            'Equatorial Guinea', 'Saint Kitts and Nevis', 'Antigua and Barbuda',
+            'Montserrat', 'Guadeloupe', 'Dominica', 'Martinique', 'Saint Lucia',
+            'Saint Vincent and the Grenadines', 'Barbados', 'Grenada', 'Trinidad and Tobago',
+            'Aruba', 'Curacao', 'Bonaire', 'Saint Barthelemy', 'Saint Martin',
+            'Sint Maarten', 'Anguilla', 'British Virgin Islands', 'United States Virgin Islands',
+            'Puerto Rico', 'Turks and Caicos Islands', 'Cayman Islands', 'Jamaica',
+            'Bahamas', 'Bermuda', 'Greenland', 'Faroe Islands', 'Isle of Man',
+            'Jersey', 'Guernsey', 'Aland Islands', 'Svalbard', 'Jan Mayen',
+            'Monaco', 'San Marino', 'Vatican City', 'Liechtenstein', 'Andorra',
+            'Gibraltar', 'Malta', 'Cyprus', 'Bahrain', 'Qatar'
+        ];
+
+        // geometry의 총 좌표 수 계산 함수
+        function getCoordinateCount(geometry) {
+            if (!geometry || !geometry.coordinates) return 0;
+            
+            let count = 0;
+            const countCoords = (coords) => {
+                if (typeof coords[0] === 'number') {
+                    return 1;
+                }
+                return coords.reduce((sum, c) => sum + countCoords(c), 0);
+            };
+            
+            return countCoords(geometry.coordinates);
+        }
+
+        async function initMap() {
+            const response = await fetch(COUNTRIES_URL);
+            const geojsonData = await response.json();
+
+            // 최소 좌표 수 임계값 (이 값보다 작으면 제외)
+            const MIN_COORDINATE_COUNT = 300;
+
+            // 남극대륙 및 작은 섬나라 제외 필터링
+            const filteredData = {
+                ...geojsonData,
+                features: geojsonData.features.filter(feature => {
+                    const name = feature.properties.ADMIN || feature.properties.name || '';
+                    const iso = feature.properties.ISO_A3 || '';
+                    
+                    // 남극 제외
+                    if (name === 'Antarctica' || iso === 'ATA') return false;
+                    
+                    // 작은 섬나라 제외
+                    if (SMALL_ISLANDS.includes(name)) return false;
+                    
+                    // 좌표 수가 적은 작은 지역 제외
+                    const coordCount = getCoordinateCount(feature.geometry);
+                    if (coordCount < MIN_COORDINATE_COUNT) return false;
+                    
+                    return true;
+                })
+            };
+
+            // 마커 색상 (EA1917 = RGB(234, 25, 23))
+            const MARKER_COLOR = [234, 25, 23];
+
+            // 한국 도시 마커 데이터
+            const koreaMarkers = [
+                { name: 'Changwon', coordinates: [128.6811, 35.2279], color: MARKER_COLOR },
+                { name: 'Pyeongtaek', coordinates: [127.1147, 36.9920], color: MARKER_COLOR }
+            ];
+
+            // 중국 도시 마커 데이터
+            const chinaMarkers = [
+                { name: 'Tianjin', coordinates: [117.2008, 39.0842], color: MARKER_COLOR },
+                { name: 'Taizhou', coordinates: [119.9082, 32.4901], color: MARKER_COLOR },
+                { name: 'Nanjing', coordinates: [118.7969, 32.0603], color: MARKER_COLOR },
+                { name: 'Huizhou', coordinates: [114.4158, 23.1107], color: MARKER_COLOR }
+            ];
+
+            // 미국 마커 데이터
+            const usaMarkers = [
+                { name: 'Clarksville', coordinates: [-87.3595, 36.5298], color: MARKER_COLOR },
+                { name: 'Huntsville', coordinates: [-86.5861, 34.7304], color: MARKER_COLOR }
+            ];
+
+            // 브라질 마커 데이터
+            const brazilMarkers = [
+                { name: 'Manaus', coordinates: [-60.0253, -3.1190], color: MARKER_COLOR }
+            ];
+
+            // 폴란드 마커 데이터
+            const polandMarkers = [
+                { name: 'Mlawa', coordinates: [20.3844, 53.1128], color: MARKER_COLOR }
+            ];
+
+            // 튀르키예 마커 데이터
+            const turkeyMarkers = [
+                { name: 'Istanbul', coordinates: [28.955, 41.0136], color: MARKER_COLOR }
+            ];
+
+            // 태국 마커 데이터
+            const thailandMarkers = [
+                { name: 'Rayong', coordinates: [101.258, 12.681], color: MARKER_COLOR }
+            ];
+
+            // 클러스터 중심점 및 국가별 확대 뷰 설정
+            const koreaCluster = {
+                name: 'korea',
+                coordinates: [127.8979, 36.10995],
+                count: 2,
+                color: MARKER_COLOR,
+                country: 'korea',
+                viewState: {
+                    longitude: 127.5,
+                    latitude: 36.5,
+                    zoom: 6
+                }
+            };
+
+            const chinaCluster = {
+                name: 'China',
+                coordinates: [117.3304, 31.6599],
+                count: 4,
+                color: MARKER_COLOR,
+                country: 'china',
+                viewState: {
+                    longitude: 105.0,
+                    latitude: 37.7,
+                    zoom: 3.2
+                }
+            };
+
+            const usaCluster = {
+                name: 'USA',
+                coordinates: [-86.9728, 35.6301], // 클락스빌과 헌츠빌의 중간점
+                count: 2,
+                color: MARKER_COLOR,
+                country: 'usa',
+                viewState: {
+                    longitude: -100,
+                    latitude: 35.6,
+                    zoom: 3.5
+                }
+            };
+
+            const brazilCluster = {
+                name: 'Brazil',
+                coordinates: [-60.0253, -3.1190],
+                count: 1,
+                color: MARKER_COLOR,
+                country: 'brazil',
+                viewState: {
+                    longitude: -55.0,
+                    latitude: -15.0,
+                    zoom: 3
+                }
+            };
+
+            const polandCluster = {
+                name: 'Poland',
+                coordinates: [20.3844, 53.1128],
+                count: 1,
+                color: MARKER_COLOR,
+                country: 'poland',
+                viewState: {
+                    longitude: 19.0,
+                    latitude: 52.0,
+                    zoom: 5
+                }
+            };
+
+            const turkeyCluster = {
+                name: 'Türkiye',
+                coordinates: [28.955, 41.0136],
+                count: 1,
+                color: MARKER_COLOR,
+                country: 'turkey',
+                viewState: {
+                    longitude: 35,
+                    latitude: 39,
+                    zoom: 5.5
+                }
+            };
+
+            const thailandCluster = {
+                name: 'Thailand',
+                coordinates: [101.258, 12.681],
+                count: 1,
+                color: MARKER_COLOR,
+                country: 'thailand',
+                viewState: {
+                    longitude: 101.3,
+                    latitude: 12.7,
+                    zoom: 4.8
+                }
+            };
+
+            // 줌 임계값 (이 값 이하에서는 클러스터로 표시)
+            const CLUSTER_ZOOM_THRESHOLD = 3;
+
+            // 펄스 애니메이션 상태
+            let pulseRadius = 0;
+            let pulseOpacity = 1;
+
+            // 초기 뷰 상태
+            const INITIAL_VIEW_STATE = {
+                longitude: 10,
+                latitude: 42,
+                zoom: 1.1,
+                pitch: 0,
+                bearing: 0
+            };
+
+            // 현재 뷰 상태
+            let currentViewState = { ...INITIAL_VIEW_STATE };
+            
+            // 줌인 상태 추적
+            let isZoomedIn = false;
+
+            // 마커가 있는 국가 목록
+            const COUNTRIES_WITH_MARKERS = [
+                'South Korea',
+                'China',
+                'United States of America',
+                'Brazil',
+                'Poland',
+                'Turkey',
+                'Thailand'
+            ];
+
+            // hover 상태 추적
+            let hoveredCountry = null;
+            
+            // 확대된 국가 추적
+            let zoomedCountry = null;
+            
+            // 포커스된 마커 추적 (버튼 포커스용)
+            let focusedMarker = null;
+            
+            // 국가 코드와 이름 매핑
+            const COUNTRY_NAME_MAP = {
+                'korea': 'South Korea',
+                'china': 'China',
+                'usa': 'United States of America',
+                'brazil': 'Brazil',
+                'poland': 'Poland',
+                'turkey': 'Turkey',
+                'thailand': 'Thailand'
+            };
+            
+            // 국가 이름으로 클러스터 찾기
+            const getClusterByCountryName = (countryName) => {
+                const clusterMap = {
+                    'South Korea': koreaCluster,
+                    'China': chinaCluster,
+                    'United States of America': usaCluster,
+                    'Brazil': brazilCluster,
+                    'Poland': polandCluster,
+                    'Turkey': turkeyCluster,
+                    'Thailand': thailandCluster
+                };
+                return clusterMap[countryName] || null;
+            };
+            
+            // 마커/클러스터에서 국가 이름 찾기
+            const getCountryNameFromMarker = (marker) => {
+                if (!marker) return null;
+                // 클러스터인 경우
+                if (marker.country) {
+                    return COUNTRY_NAME_MAP[marker.country] || null;
+                }
+                // 개별 마커인 경우 - 마커 이름으로 국가 찾기
+                const markerName = marker.name;
+                if (['Changwon', 'Pyeongtaek'].includes(markerName)) return 'South Korea';
+                if (['Tianjin', 'Taizhou', 'Nanjing', 'Huizhou'].includes(markerName)) return 'China';
+                if (['Clarksville', 'Huntsville'].includes(markerName)) return 'United States of America';
+                if (markerName === 'Manaus') return 'Brazil';
+                if (markerName === 'Mlawa') return 'Poland';
+                if (markerName === 'Istanbul') return 'Turkey';
+                if (markerName === 'Rayong') return 'Thailand';
+                return null;
+            };
+
+            // 툴팁이 겹치는지 확인하는 함수
+            const checkOverlap = (rect1, rect2) => {
+                return !(rect1.right < rect2.left || 
+                        rect1.left > rect2.right || 
+                        rect1.bottom < rect2.top || 
+                        rect1.top > rect2.bottom);
+            };
+
+            // 툴팁 위치 조정 함수 (겹치지 않도록)
+            const adjustTooltipPosition = (tooltip, tooltips, containerWidth) => {
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const containerRect = document.getElementById('deck-container').getBoundingClientRect();
+                const tooltipLeft = tooltipRect.left - containerRect.left;
+                const tooltipRight = tooltipRect.right - containerRect.left;
+                const tooltipTop = tooltipRect.top - containerRect.top;
+                const tooltipBottom = tooltipRect.bottom - containerRect.top;
+                
+                let offsetX = 0;
+                let maxIterations = 50;
+                let iteration = 0;
+                
+                while (iteration < maxIterations) {
+                    let hasOverlap = false;
+                    const currentRect = {
+                        left: tooltipLeft + offsetX,
+                        right: tooltipRight + offsetX,
+                        top: tooltipTop,
+                        bottom: tooltipBottom
+                    };
+                    
+                    // 다른 툴팁들과 겹치는지 확인
+                    for (const otherTooltip of tooltips) {
+                        if (otherTooltip === tooltip) continue;
+                        
+                        const otherRect = otherTooltip.getBoundingClientRect();
+                        const otherRectAdjusted = {
+                            left: otherRect.left - containerRect.left,
+                            right: otherRect.right - containerRect.left,
+                            top: otherRect.top - containerRect.top,
+                            bottom: otherRect.bottom - containerRect.top
+                        };
+                        
+                        if (checkOverlap(currentRect, otherRectAdjusted)) {
+                            hasOverlap = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasOverlap) {
+                        // 화면 경계 확인
+                        const newLeft = tooltipLeft + offsetX;
+                        const newRight = tooltipRight + offsetX;
+                        
+                        if (newLeft >= 0 && newRight <= containerWidth) {
+                            break;
+                        } else if (newLeft < 0) {
+                            offsetX = -tooltipLeft;
+                        } else if (newRight > containerWidth) {
+                            offsetX = containerWidth - tooltipRight;
+                        }
+                    }
+                    
+                    // 겹치면 좌우로 이동 시도
+                    if (hasOverlap) {
+                        // 먼저 오른쪽으로 이동 시도
+                        offsetX += 10;
+                        const newRight = tooltipRight + offsetX;
+                        if (newRight > containerWidth) {
+                            // 오른쪽이 경계를 넘으면 왼쪽으로 이동
+                            offsetX = -10;
+                            const newLeft = tooltipLeft + offsetX;
+                            if (newLeft < 0) {
+                                // 왼쪽도 경계를 넘으면 원래 위치로
+                                offsetX = 0;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    iteration++;
+                }
+                
+                return offsetX;
+            };
+
+            // 툴팁 업데이트 함수
+            const updateTooltips = (viewState, focusedMarkerData = null) => {
+                const container = document.getElementById('deck-container');
+                const existingTooltips = container.querySelectorAll('.marker-tooltip');
+                existingTooltips.forEach(tooltip => tooltip.remove());
+
+                const isClusterMode = viewState.zoom < CLUSTER_ZOOM_THRESHOLD;
+                const markerData = isClusterMode 
+                    ? [koreaCluster, chinaCluster, usaCluster, brazilCluster, polandCluster, turkeyCluster, thailandCluster] 
+                    : [...koreaMarkers, ...chinaMarkers, ...usaMarkers, ...brazilMarkers, ...polandMarkers, ...turkeyMarkers, ...thailandMarkers];
+
+                const viewport = new deck.WebMercatorViewport({
+                    width: container.clientWidth,
+                    height: container.clientHeight,
+                    longitude: viewState.longitude,
+                    latitude: viewState.latitude,
+                    zoom: viewState.zoom,
+                    pitch: viewState.pitch || 0,
+                    bearing: viewState.bearing || 0
+                });
+
+                const tooltips = [];
+                const tooltipData = [];
+
+                // 먼저 모든 툴팁을 생성 (DOM에 추가하지 않음)
+                markerData.forEach(marker => {
+                    const [x, y] = viewport.project(marker.coordinates);
+                    
+                    // 화면 밖에 있으면 표시하지 않음
+                    if (x < 0 || x > container.clientWidth || y < 0 || y > container.clientHeight) {
+                        return;
+                    }
+
+                    // 중국 마커인지 확인 (초기 위치 조정용)
+                    const isChinaMarker = isClusterMode 
+                        ? marker.name === 'China'
+                        : ['Tianjin', 'Taizhou', 'Nanjing', 'Huizhou'].includes(marker.name);
+                    
+                    // 한국 마커인지 확인 (초기 위치 조정용)
+                    const isKoreaMarker = isClusterMode 
+                        ? marker.name === 'korea'
+                        : ['Changwon', 'Pyeongtaek'].includes(marker.name);
+                    
+                    // 튀르키예 마커인지 확인 (초기 위치 조정용)
+                    const isTurkeyMarker = isClusterMode 
+                        ? marker.name === 'Türkiye'
+                        : marker.name === 'Istanbul';
+                    
+                    // USA 세부 지역 마커인지 확인 (초기 위치 조정용)
+                    const isClarksville = marker.name === 'Clarksville';
+                    const isHuntsville = marker.name === 'Huntsville';
+                    
+                    // 툴팁 초기 위치 조정
+                    let initialOffsetX = 0;
+                    if (isChinaMarker) initialOffsetX = -30;
+                    else if (isKoreaMarker) initialOffsetX = -10;
+                    else if (isTurkeyMarker) initialOffsetX = 25;
+                    else if (isClarksville) initialOffsetX = -30;
+                    else if (isHuntsville) initialOffsetX = 30;
+
+                    // 포커스/호버된 마커인지 확인
+                    const isFocused = focusedMarkerData && (
+                        marker.name === focusedMarkerData.name || // 이름으로 비교
+                        (focusedMarkerData.coordinates && 
+                            Math.abs(marker.coordinates[0] - focusedMarkerData.coordinates[0]) < 0.0001 &&
+                            Math.abs(marker.coordinates[1] - focusedMarkerData.coordinates[1]) < 0.0001) // 좌표로 비교
+                    );
+
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'marker-tooltip';
+                    tooltip.innerHTML = `
+                        <div style="
+                            background: ${isFocused ? '#EA1917' : '#FFFFFF'};
+                            padding: 8px 16px;
+                            border-radius: 20px;
+                            color: ${isFocused ? '#FFFFFF' : '#333'};
+                            font-size: 13px;
+                            font-weight: 500;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+                            white-space: nowrap;
+                            pointer-events: none;
+                        ">
+                            ${marker.name}
+                        </div>
+                    `;
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.left = `${x + initialOffsetX}px`;
+                    tooltip.style.top = `${y - (isClusterMode ? 50 : 40)}px`; // 마커 위쪽에 배치
+                    tooltip.style.transform = 'translateX(-50%)';
+                    tooltip.style.zIndex = '1000';
+                    tooltip.style.visibility = 'hidden'; // 위치 계산을 위해 숨김
+                    tooltip.style.opacity = '0';
+                    
+                    container.appendChild(tooltip);
+                    tooltips.push(tooltip);
+                    tooltipData.push({ tooltip, x, y, marker });
+                });
+
+                // 모든 툴팁의 위치를 조정
+                tooltips.forEach((tooltip, index) => {
+                    const offsetX = adjustTooltipPosition(tooltip, tooltips, container.clientWidth);
+                    const data = tooltipData[index];
+                    
+                    // 중국 마커인지 확인 (초기 위치에 이미 반영됨)
+                    const isChinaMarker = isClusterMode 
+                        ? data.marker.name === 'China'
+                        : ['Tianjin', 'Taizhou', 'Nanjing', 'Huizhou'].includes(data.marker.name);
+                    
+                    // 한국 마커인지 확인 (초기 위치에 이미 반영됨)
+                    const isKoreaMarker = isClusterMode 
+                        ? data.marker.name === 'korea'
+                        : ['Changwon', 'Pyeongtaek'].includes(data.marker.name);
+                    
+                    // 튀르키예 마커인지 확인 (초기 위치에 이미 반영됨)
+                    const isTurkeyMarker = isClusterMode 
+                        ? data.marker.name === 'Türkiye'
+                        : data.marker.name === 'Istanbul';
+                    
+                    // USA 세부 지역 마커인지 확인 (초기 위치에 이미 반영됨)
+                    const isClarksville = data.marker.name === 'Clarksville';
+                    const isHuntsville = data.marker.name === 'Huntsville';
+                    
+                    // 초기 오프셋 (이미 툴팁 생성 시 적용됨)
+                    let initialOffsetX = 0;
+                    if (isChinaMarker) initialOffsetX = -30;
+                    else if (isKoreaMarker) initialOffsetX = -10;
+                    else if (isTurkeyMarker) initialOffsetX = 25;
+                    else if (isClarksville) initialOffsetX = -40;
+                    else if (isHuntsville) initialOffsetX = 40;
+                    
+                    // 위치 업데이트 (초기 오프셋 + 겹침 방지 오프셋)
+                    tooltip.style.left = `${data.x + initialOffsetX + offsetX}px`;
+                    tooltip.style.transform = 'translateX(-50%)';
+                    tooltip.style.visibility = 'visible';
+                    tooltip.style.opacity = '1';
+                });
+            };
+
+            // 레이어 생성 함수
+            const createLayers = (zoom, focusedMarkerData = null) => {
+                const isClusterMode = zoom < CLUSTER_ZOOM_THRESHOLD;
+                const markerData = isClusterMode 
+                    ? [koreaCluster, chinaCluster, usaCluster, brazilCluster, polandCluster, turkeyCluster, thailandCluster] 
+                    : [...koreaMarkers, ...chinaMarkers, ...usaMarkers, ...brazilMarkers, ...polandMarkers, ...turkeyMarkers, ...thailandMarkers];
+
+                return [
+                    // 세계지도 레이어
+                    new deck.GeoJsonLayer({
+                        id: 'world-countries',
+                        data: filteredData,
+                        stroked: true,
+                        filled: true,
+                        lineWidthMinPixels: 1,
+                        lineWidthMaxPixels: 2,
+                        getFillColor: (feature, { index }) => {
+                            const name = feature.properties.ADMIN || feature.properties.name || '';
+                            // 확대된 국가, hover 상태, 또는 버튼 포커스/호버 상태일 때 마커가 있는 국가에 색상 적용
+                            const focusedCountry = getCountryNameFromMarker(focusedMarkerData);
+                            const targetCountry = zoomedCountry || hoveredCountry || focusedCountry;
+                            if (targetCountry && name === targetCountry && COUNTRIES_WITH_MARKERS.includes(name)) {
+                                return [...MARKER_COLOR, 40];
+                            }
+                            // 기본 국가 - #F6F3EB
+                            return [246, 243, 235, 255];
+                        },
+                        updateTriggers: {
+                            getFillColor: [hoveredCountry, zoomedCountry, focusedMarkerData]
+                        },
+                        getLineColor: [217, 215, 211, 255],
+                        getLineWidth: 1,
+                        pickable: true,
+                        autoHighlight: false,
+                        onHover: (info) => {
+                            let newHoveredCountry = null;
+                            
+                            if (info.object && info.object.properties) {
+                                const name = info.object.properties.ADMIN || info.object.properties.name || null;
+                                if (name && COUNTRIES_WITH_MARKERS.includes(name)) {
+                                    newHoveredCountry = name;
+                                }
+                            }
+                            
+                            if (hoveredCountry !== newHoveredCountry) {
+                                hoveredCountry = newHoveredCountry;
+                                // 레이어 업데이트를 위해 강제 리렌더링 (국가 영역 색상만 변경)
+                                deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                            }
+                        },
+                        onClick: (info) => {
+                            if (info.object && info.object.properties) {
+                                const name = info.object.properties.ADMIN || info.object.properties.name || null;
+                                if (name && COUNTRIES_WITH_MARKERS.includes(name)) {
+                                    const cluster = getClusterByCountryName(name);
+                                    if (cluster && cluster.viewState) {
+                                        // 클러스터 viewState로 줌인
+                                        currentViewState = {
+                                            ...currentViewState,
+                                            longitude: cluster.viewState.longitude,
+                                            latitude: cluster.viewState.latitude,
+                                            zoom: cluster.viewState.zoom,
+                                            transitionDuration: 1000,
+                                            transitionInterpolator: new deck.FlyToInterpolator()
+                                        };
+                                        
+                                        zoomedCountry = name;
+                                        isZoomedIn = true;
+                                        deckgl.setProps({ 
+                                            initialViewState: currentViewState,
+                                            layers: createLayers(currentViewState.zoom, focusedMarker)
+                                        });
+                                        
+                                        setTimeout(() => {
+                                            updateTooltips(currentViewState, focusedMarker);
+                                            createMarkerButtons(); // 버튼 업데이트
+                                            // 줌인 시 축소 버튼 표시
+                                            document.getElementById('zoom-out-button').style.display = 'block';
+                                        }, 1100);
+                                        
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }),
+
+                    // 펄스 외곽 효과 레이어 (가장 바깥)
+                    new deck.ScatterplotLayer({
+                        id: 'marker-pulse-outer',
+                        data: markerData,
+                        getPosition: d => d.coordinates,
+                        getRadius: isClusterMode ? 50000 + pulseRadius * 30000 : 25000 + pulseRadius * 20000,
+                        getFillColor: d => [...d.color, Math.floor(pulseOpacity * 50)],
+                        radiusMinPixels: isClusterMode ? 12 + pulseRadius * 15 : 10 + pulseRadius * 15,
+                        radiusMaxPixels: 150,
+                        pickable: false
+                    }),
+
+                    // 펄스 중간 효과 레이어
+                    new deck.ScatterplotLayer({
+                        id: 'marker-pulse-middle',
+                        data: markerData,
+                        getPosition: d => d.coordinates,
+                        getRadius: isClusterMode ? 35000 + pulseRadius * 20000 : 18000 + pulseRadius * 15000,
+                        getFillColor: d => [...d.color, Math.floor(pulseOpacity * 80)],
+                        radiusMinPixels: isClusterMode ? 9 + pulseRadius * 10 : 7 + pulseRadius * 10,
+                        radiusMaxPixels: 120,
+                        pickable: false
+                    }),
+
+                    // 메인 마커 레이어 (채워진 원)
+                    new deck.ScatterplotLayer({
+                        id: 'marker-main',
+                        data: markerData,
+                        getPosition: d => d.coordinates,
+                        getRadius: isClusterMode ? 20000 : 12000,
+                        getFillColor: d => [...d.color, 255],
+                        getLineColor: d => {
+                            // 포커스된 마커인지 확인
+                            if (focusedMarkerData) {
+                                // 이름으로 비교 (더 정확함)
+                                const isFocusedByName = d.name === focusedMarkerData.name;
+                                // 좌표로 비교 (백업)
+                                const isFocusedByCoords = focusedMarkerData.coordinates && 
+                                    Math.abs(d.coordinates[0] - focusedMarkerData.coordinates[0]) < 0.0001 &&
+                                    Math.abs(d.coordinates[1] - focusedMarkerData.coordinates[1]) < 0.0001;
+                                if (isFocusedByName || isFocusedByCoords) {
+                                    return [255, 255, 255, 255]; // 흰색 border
+                                }
+                            }
+                            return [...d.color, 0];
+                        },
+                        getLineWidth: d => {
+                            // 포커스된 마커인지 확인
+                            if (focusedMarkerData) {
+                                // 이름으로 비교 (더 정확함)
+                                const isFocusedByName = d.name === focusedMarkerData.name;
+                                // 좌표로 비교 (백업)
+                                const isFocusedByCoords = focusedMarkerData.coordinates && 
+                                    Math.abs(d.coordinates[0] - focusedMarkerData.coordinates[0]) < 0.0001 &&
+                                    Math.abs(d.coordinates[1] - focusedMarkerData.coordinates[1]) < 0.0001;
+                                if (isFocusedByName || isFocusedByCoords) {
+                                    return 3; // 두꺼운 border
+                                }
+                            }
+                            return 0;
+                        },
+                        lineWidthMinPixels: 2,
+                        stroked: true,
+                        radiusMinPixels: isClusterMode ? 7 : 6,
+                        radiusMaxPixels: 80,
+                        updateTriggers: {
+                            getLineColor: [focusedMarkerData],
+                            getLineWidth: [focusedMarkerData]
+                        },
+                        pickable: true,
+                        autoHighlight: true,
+                        highlightColor: [255, 255, 255, 150],
+                        onClick: (info) => {
+                            if (info.object) {
+                                const isCluster = info.object.count !== undefined;
+                                
+                                if (isCluster && info.object.viewState) {
+                                    // 클러스터 클릭 시: 국가별로 설정된 viewState 사용
+                                    const countryCode = info.object.country;
+                                    zoomedCountry = COUNTRY_NAME_MAP[countryCode] || null;
+                                    
+                                    currentViewState = {
+                                        ...currentViewState,
+                                        longitude: info.object.viewState.longitude,
+                                        latitude: info.object.viewState.latitude,
+                                        zoom: info.object.viewState.zoom,
+                                        transitionDuration: 1000,
+                                        transitionInterpolator: new deck.FlyToInterpolator()
+                                    };
+                                    isZoomedIn = true;
+                                    deckgl.setProps({ 
+                                        initialViewState: currentViewState,
+                                        layers: createLayers(currentViewState.zoom, focusedMarker)
+                                    });
+                                    // transition이 완료된 후 툴팁 업데이트 및 버튼 업데이트
+                                    setTimeout(() => {
+                                        updateTooltips(currentViewState, focusedMarker);
+                                        createMarkerButtons(); // 버튼 업데이트
+                                        // 줌인 시 축소 버튼 표시
+                                        document.getElementById('zoom-out-button').style.display = 'block';
+                                    }, 1100);
+                                } else {
+                                    // 개별 마커 클릭 시: 추후 다른 기능 추가 예정
+                                    return true;
+                                }
+                            }
+                            return true;
+                        },
+                        onHover: (info) => {
+                            const container = document.getElementById('deck-container');
+                            container.style.cursor = info.object ? 'pointer' : 'grab';
+                        }
+                    }),
+
+                ];
+            };
+
+            const deckgl = new deck.DeckGL({
+                container: 'deck-container',
+                initialViewState: currentViewState,
+                controller: {
+                    scrollZoom: false,
+                    doubleClickZoom: false,
+                    dragPan: false,
+                    dragRotate: false,
+                    keyboard: false,
+                    touchZoom: false,
+                    touchRotate: false
+                },
+                layers: createLayers(currentViewState.zoom, focusedMarker),
+                onViewStateChange: ({ viewState }) => {
+                    currentViewState = viewState;
+                    updateTooltips(viewState, focusedMarker);
+                },
+                onHover: (info) => {
+                    // GeoJsonLayer가 아닌 경우 또는 아무것도 hover되지 않을 때 국가 hover 상태 초기화
+                    if (!info.object) {
+                        if (hoveredCountry !== null) {
+                            hoveredCountry = null;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                        }
+                    } else if (info.layer && info.layer.id === 'world-countries') {
+                        // GeoJsonLayer의 onHover에서 처리하므로 여기서는 아무것도 하지 않음
+                    } else {
+                        // 다른 레이어에 hover 시 국가 hover 상태 초기화
+                        if (hoveredCountry !== null) {
+                            hoveredCountry = null;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                        }
+                    }
+                },
+                onClick: (info) => {
+                    // 빈 공간 클릭 시 아무 동작 없음
+                },
+                getTooltip: () => null
+            });
+
+            // 초기 툴팁 표시
+            updateTooltips(currentViewState, focusedMarker);
+
+            // 지도 축소 버튼 클릭 이벤트
+            document.getElementById('zoom-out-button').addEventListener('click', () => {
+                // 이전에 선택된 국가 저장
+                const previousCountry = zoomedCountry;
+                
+                currentViewState = {
+                    ...INITIAL_VIEW_STATE,
+                    transitionDuration: 1000,
+                    transitionInterpolator: new deck.FlyToInterpolator()
+                };
+                isZoomedIn = false;
+                zoomedCountry = null;
+                deckgl.setProps({ 
+                    initialViewState: currentViewState,
+                    layers: createLayers(currentViewState.zoom, focusedMarker)
+                });
+                // 버튼 숨김
+                document.getElementById('zoom-out-button').style.display = 'none';
+                // transition이 완료된 후 툴팁 업데이트 및 버튼 업데이트
+                setTimeout(() => {
+                    updateTooltips(currentViewState, focusedMarker);
+                    createMarkerButtons(); // 버튼 업데이트
+                    
+                    // 이전에 선택된 클러스터 버튼으로 포커스 이동
+                    if (previousCountry) {
+                        const clusterButton = document.querySelector(`[data-country="${previousCountry}"]`);
+                        if (clusterButton) {
+                            clusterButton.focus();
+                        }
+                    }
+                }, 1100);
+            });
+
+            // 마커 버튼 생성 함수
+            const createMarkerButtons = () => {
+                const buttonsContainer = document.getElementById('marker-buttons');
+                buttonsContainer.innerHTML = '';
+                
+                let tabIndexCounter = 1; // tabindex 순서 카운터
+
+                // 클러스터와 개별 마커를 매핑
+                const clusterMarkerMap = [
+                    {
+                        cluster: koreaCluster,
+                        markers: koreaMarkers,
+                        displayName: 'Korea',
+                        countryName: 'South Korea'
+                    },
+                    {
+                        cluster: chinaCluster,
+                        markers: chinaMarkers,
+                        displayName: 'China',
+                        countryName: 'China'
+                    },
+                    {
+                        cluster: usaCluster,
+                        markers: usaMarkers,
+                        displayName: 'USA',
+                        countryName: 'United States of America'
+                    },
+                    {
+                        cluster: brazilCluster,
+                        markers: brazilMarkers,
+                        displayName: 'Brazil',
+                        countryName: 'Brazil'
+                    },
+                    {
+                        cluster: polandCluster,
+                        markers: polandMarkers,
+                        displayName: 'Poland',
+                        countryName: 'Poland'
+                    },
+                    {
+                        cluster: turkeyCluster,
+                        markers: turkeyMarkers,
+                        displayName: 'Türkiye',
+                        countryName: 'Turkey'
+                    },
+                    {
+                        cluster: thailandCluster,
+                        markers: thailandMarkers,
+                        displayName: 'Thailand',
+                        countryName: 'Thailand'
+                    }
+                ];
+
+                clusterMarkerMap.forEach(({ cluster, markers, displayName, countryName }) => {
+                    // 클러스터 버튼 생성 (zoomedCountry가 null일 때만 표시, 선택된 국가는 숨김)
+                    if (zoomedCountry === null) {
+                        const clusterButton = document.createElement('button');
+                        clusterButton.className = 'marker-button cluster-button';
+                        clusterButton.textContent = `${displayName}`;
+                        clusterButton.tabIndex = tabIndexCounter++;
+                        clusterButton.dataset.country = countryName; // 국가 식별용 속성 추가
+                        clusterButton.addEventListener('focus', () => {
+                            // 클러스터 포커스 시 해당 클러스터 마커에 포커스 표시
+                            focusedMarker = cluster;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                            updateTooltips(currentViewState, focusedMarker);
+                        });
+                        clusterButton.addEventListener('blur', () => {
+                            // 포커스 해제 시 포커스 상태 초기화
+                            focusedMarker = null;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, null) });
+                            updateTooltips(currentViewState, null);
+                        });
+                        clusterButton.addEventListener('mouseenter', () => {
+                            // 클러스터 호버 시 해당 클러스터 마커에 포커스 표시
+                            focusedMarker = cluster;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                            updateTooltips(currentViewState, focusedMarker);
+                        });
+                        clusterButton.addEventListener('mouseleave', () => {
+                            // 호버 해제 시 포커스 상태 초기화
+                            focusedMarker = null;
+                            deckgl.setProps({ layers: createLayers(currentViewState.zoom, null) });
+                            updateTooltips(currentViewState, null);
+                        });
+                        clusterButton.addEventListener('click', () => {
+                            // 클러스터 viewState로 이동
+                            currentViewState = {
+                                ...currentViewState,
+                                longitude: cluster.viewState.longitude,
+                                latitude: cluster.viewState.latitude,
+                                zoom: cluster.viewState.zoom,
+                                transitionDuration: 1000,
+                                transitionInterpolator: new deck.FlyToInterpolator()
+                            };
+                            
+                            zoomedCountry = countryName;
+                            isZoomedIn = true;
+                            deckgl.setProps({ 
+                                initialViewState: currentViewState,
+                                layers: createLayers(currentViewState.zoom, focusedMarker)
+                            });
+                            
+                            setTimeout(() => {
+                                updateTooltips(currentViewState, focusedMarker);
+                                createMarkerButtons(); // 버튼 업데이트
+                                // 줌인 시 축소 버튼 표시
+                                document.getElementById('zoom-out-button').style.display = 'block';
+                            }, 1100);
+                        });
+                        buttonsContainer.appendChild(clusterButton);
+                    }
+
+                    // 개별 마커 버튼 생성 (해당 국가가 줌인되었을 때만 표시)
+                    if (zoomedCountry === countryName) {
+                        markers.forEach(marker => {
+                            const markerButton = document.createElement('button');
+                            markerButton.className = 'marker-button individual-button';
+                            markerButton.textContent = `  └ ${marker.name}`;
+                            markerButton.tabIndex = tabIndexCounter++;
+                            markerButton.addEventListener('focus', () => {
+                                // 개별 마커 포커스 시 해당 마커에 포커스 표시
+                                focusedMarker = marker;
+                                deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                                updateTooltips(currentViewState, focusedMarker);
+                            });
+                            markerButton.addEventListener('blur', () => {
+                                // 포커스 해제 시 포커스 상태 초기화
+                                focusedMarker = null;
+                                deckgl.setProps({ layers: createLayers(currentViewState.zoom, null) });
+                                updateTooltips(currentViewState, null);
+                            });
+                            markerButton.addEventListener('mouseenter', () => {
+                                // 개별 마커 호버 시 해당 마커에 포커스 표시
+                                focusedMarker = marker;
+                                deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                                updateTooltips(currentViewState, focusedMarker);
+                            });
+                            markerButton.addEventListener('mouseleave', () => {
+                                // 호버 해제 시 포커스 상태 초기화
+                                focusedMarker = null;
+                                deckgl.setProps({ layers: createLayers(currentViewState.zoom, null) });
+                                updateTooltips(currentViewState, null);
+                            });
+                            markerButton.addEventListener('click', () => {
+                                // 추후 다른 기능 추가 예정
+                            });
+                            buttonsContainer.appendChild(markerButton);
+                        });
+                    }
+                });
+            };
+
+            // 마커 버튼 생성
+            createMarkerButtons();
+
+            // 펄스 애니메이션 루프
+            function animatePulse() {
+                pulseRadius += 0.02;
+                pulseOpacity = 1 - pulseRadius;
+
+                if (pulseRadius >= 1) {
+                    pulseRadius = 0;
+                    pulseOpacity = 1;
+                }
+
+                deckgl.setProps({ layers: createLayers(currentViewState.zoom, focusedMarker) });
+                updateTooltips(currentViewState, focusedMarker);
+                requestAnimationFrame(animatePulse);
+            }
+
+            animatePulse();
+        }
+
+        initMap();
+    </script>
+</body>
+</html>
